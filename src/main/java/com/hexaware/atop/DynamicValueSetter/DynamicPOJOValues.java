@@ -1,5 +1,6 @@
 package com.hexaware.atop.DynamicValueSetter;
 
+import java.beans.PropertyDescriptor;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -46,7 +47,7 @@ public class DynamicPOJOValues {
 
     File folder = new File(jsonFilePath);
     XSSFWorkbook wb = new XSSFWorkbook(fis);
-    int counter = 0;
+
     File[] listOfFiles = folder.listFiles(new FileFilter() {
 
         @Override
@@ -61,16 +62,17 @@ public class DynamicPOJOValues {
     });
 
     for (File jsonFile : listOfFiles) {
-        counter++;
+  
         System.out.println(jsonFile.getAbsolutePath() + "====" + jsonFile.getName());
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> staticMap = mapper.readValue(new File(jsonFile.getAbsolutePath()), Map.class);
 
-        convertJsonToJavaClass(new File(jsonFile.getAbsolutePath()).toURL(), new File(AtopConstants.PACKAGE_NAME), "",
-                "Model" + counter);
+        convertJsonToJavaClass(new File(jsonFile.getAbsolutePath()).toURL(), new File(AtopConstants.PACKAGE_NAME), "test",
+                "Model" );
         Thread.sleep(5000);
-
-        Class class_ = Class.forName("Model" + counter);
+        //DynamicPOJO pojos = new DynamicPOJO();
+       
+        //Class class_ = Class.forName("Model" + counter);
 
 
         // creating Workbook instance that refers to .xlsx file
@@ -95,8 +97,9 @@ public class DynamicPOJOValues {
                 Object obj = null;
                 // instantiate an object of the generic class an object
                 try {
-
-                    obj = class_.getDeclaredConstructor().newInstance();
+                    DynamicPOJO dyanmicpojo = new DynamicPOJO();
+                    //obj = class_.getDeclaredConstructor().newInstance();
+                     obj= dyanmicpojo.createStudent("test.Model");
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
@@ -180,8 +183,10 @@ public class DynamicPOJOValues {
         ParameterizedType fieldGenericType = (ParameterizedType) field.getGenericType();
         // get it's first type parameter
         fieldTypeParameterType = (Class<?>) fieldGenericType.getActualTypeArguments()[0];
-        Class a = Class.forName(fieldTypeParameterType.getName());
-
+        
+        DynamicPOJO dyanmicpojo = new DynamicPOJO();
+        Object aobj = dyanmicpojo.createStudent(fieldTypeParameterType.getName());
+        Class a = aobj.getClass();
         if (childFieldInstance != null) {
             if (childFieldInstance instanceof List<?>) {
                 if (((List) childFieldInstance).size() > Integer.parseInt(getIndex)) {
@@ -221,6 +226,7 @@ public class DynamicPOJOValues {
         ParameterizedType fieldGenericType = (ParameterizedType) field.getGenericType();
         // get it's first type parameter
         fieldTypeParameterType = (Class<?>) fieldGenericType.getActualTypeArguments()[0];
+        System.out.println(fieldTypeParameterType.getName());
         Class a = Class.forName(fieldTypeParameterType.getName());
 
         if (childFieldInstance != null) {
@@ -263,7 +269,9 @@ public class DynamicPOJOValues {
     }
 
     else {
+        
         Method setter = object.getClass().getDeclaredMethod(fieldToSetterName(fieldName), fieldValue.getClass());
+        //Method setter = object.getClass().getMethod(fieldToSetterName(fieldName), fieldValue.getClass());
         setter.invoke(object, fieldValue);
     }
     }
@@ -328,8 +336,32 @@ public class DynamicPOJOValues {
     SchemaMapper mapper = new SchemaMapper(new RuleFactory(config, new Jackson2Annotator(config), new SchemaStore()),
             new SchemaGenerator());
     mapper.generate(jcodeModel, javaClassName, packageName, inputJsonUrl);
-
-    jcodeModel.build(outputJavaClassDirectory);
+    File target = new File("D:/Raji/CONNECT/jar/target/generated-sources/java");
+    if(!target.exists()) {
+        target.mkdirs();
+    }
+    else {
+        deleteDir(target);
+        target.mkdirs();
+    }
+    /*
+     * if (!target.mkdirs()) { throw new IOException("could not create directory");
+     * }
+     */
+    jcodeModel.build(target);
+   // jcodeModel.build(outputJavaClassDirectory);
 
     }
+    public static boolean deleteDir(File dir) {
+    if (dir.isDirectory()) {
+        String[] children = dir.list();
+        for (int i=0; i<children.length; i++) {
+            boolean success = deleteDir(new File(dir, children[i]));
+            if (!success) {
+                return false;
+            }
+        }
+    }
+    return dir.delete();
+}
 }
